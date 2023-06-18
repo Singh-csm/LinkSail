@@ -18,6 +18,9 @@ const shortTheUrl = async function (req, res) {
         const data = req.body;
         const { mainUrl } = data;
 
+        let urlRegex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/
+        if (!urlRegex.test(mainUrl)) { return res.status(400).send({ status: false, message: "please enter valid url" })};
+
         // checking data on db :- 
         const dataOnDb = await urlModel.findOne({ mainUrl: mainUrl });
 
@@ -26,7 +29,7 @@ const shortTheUrl = async function (req, res) {
             // storing data in redis cache :- 
             await client.set(dataOnDb.shortUrl, JSON.stringify(dataOnDb));
             // sending response :-
-            return res.stauts(200).send({ status: true, data: dataOnDb });
+            return res.status(200).send({ status: true, message:"Success", data: dataOnDb });
         };
 
         // else if data with this main url is not present on db :- 
