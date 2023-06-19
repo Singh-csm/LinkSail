@@ -2,11 +2,11 @@
 const redis = require('redis');
 const shortid = require('shortid');
 const urlModel = require('../model/model');
-
+const REDIS_URI = process.env.REDIS_URI;
 
 // setting-up redis environment :-
 const client = redis.createClient({
-    url: "redis://default:TQEczrbJWuzX3inf50JPiezOzXlrIsX9@redis-16953.c212.ap-south-1-1.ec2.cloud.redislabs.com:16953"
+    url: REDIS_URI
 });
 client.connect();
 client.on("connect", () => console.log("Connected to redis...!"));
@@ -17,7 +17,7 @@ const shortTheUrl = async function (req, res) {
     try {
         const data = req.body;
         const { mainUrl } = data;
-
+        if(!mainUrl) { return res.status(400).send({status: false, message: "please fill the require details", })}
         let urlRegex = /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$/
         if (!urlRegex.test(mainUrl)) { return res.status(400).send({ status: false, message: "please enter valid url" })};
 
@@ -66,7 +66,7 @@ const getTheMainUrl = async function (req, res) {
 
         // if we find data on redis (cache hit) :- 
         if (data) {
-            return res.status(200).send({ status: true, data: JSON.parse(data) });
+            return res.status(302).redirect( JSON.parse(data).mainUrl);
         };
 
         // if data is not present on redis then we have to check it on db (cache miss) :- 
@@ -79,7 +79,8 @@ const getTheMainUrl = async function (req, res) {
         await client.set(dataFromDb.urlCode, JSON.stringify(dataFromDb));
         
         // sending response to the client :- 
-        res.status(200).send({status: true, data: dataFromDb});
+        res.status(302).redirect( dataFromDb.mainUrl);
+        //res.status(200).send({status: true, data: dataFromDb});
     } catch (error) {
         res.status(500).send({ status: fasle, message: error.message });
     };
